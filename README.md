@@ -5,6 +5,7 @@ A small Android application to track the location of a person in a classroom, us
 It is built using Evothings and Cordova for developing the Android app using HTML and JS.
 
 ```
+cordova platform add android
 cordova plugin add cordova-plugin-file
 cordova plugin add https://git-wip-us.apache.org/repos/asf/cordova-plugin-device-motion.git
 ```
