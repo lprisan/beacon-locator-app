@@ -24,4 +24,5 @@ This has two ways of working, to be set in the config.xml file:
 
 * Installed EvothingsStudio
 * Installed Node.js and Cordova (`npm install -g cordova`) --> 6.2.3
-* Installed Android Studie
+* Installed Android Studio (including paths and other steps detailed in https://cordova.apache.org/docs/en/latest/guide/platforms/android/index.html )
+
