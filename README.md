@@ -18,3 +18,10 @@ This has two ways of working, to be set in the config.xml file:
 ** In the phone, start the app and connect to the IDE
 ** In the IDE, click Run on the application row
 
+## First-time Installation (for development)
+
+(for now, tried on Windows)
+
+* Installed EvothingsStudio
+* Installed Node.js and Cordova (`npm install -g cordova`) --> 6.2.3
+* Installed Android Studie
