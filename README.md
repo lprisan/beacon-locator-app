@@ -1,4 +1,4 @@
-# beacon-locator-app
+# classroom-tracker-app
 A small Android application to track the location of a person in a classroom, using bluetooth beacons.
 
 **For now, the app is built using Evothings Studio, not Cordova** -- This means shorter development cycles and refresh, but building the apk is too complex
