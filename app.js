@@ -29,6 +29,10 @@ var app = (function()
 	// Timer that displays list of beacons.
 	var updateTimer = null;
 
+	// Array of data points, both for accelerometer and beacons
+	var accelData = [];
+	var beaconData = [];
+
 	app.initialize = function()
 	{
 		document.addEventListener(
@@ -37,8 +41,42 @@ var app = (function()
 			false);
 	};
 
+
+	function initialiseAccelerometer()
+	{
+		function onSuccess(acceleration)
+		{
+			accelerometerHandler(acceleration.x, acceleration.y, acceleration.z)
+		}
+
+		function onError(error)
+		{
+			console.log('Accelerometer error: ' + error)
+		}
+
+		navigator.accelerometer.watchAcceleration(
+			onSuccess,
+			onError,
+			{ frequency: 50 })
+	}
+
+	function accelerometerHandler(accelerationX, accelerationY, accelerationZ)
+	{
+		// Update the data array with the timestamped data
+		var sample = {
+			timestamp: Date.now(),
+			x: accelerationX,
+			y: accelerationY,
+			z: accelerationZ
+		};
+		accelData.push(sample);
+	}
+
 	function onDeviceReady()
 	{
+
+		initialiseAccelerometer();
+
 		// Specify a shortcut for the location manager holding the iBeacon functions.
 		window.locationManager = cordova.plugins.locationManager;
 
@@ -46,7 +84,7 @@ var app = (function()
 		startScan();
 
 		// Display refresh timer.
-		updateTimer = setInterval(displayBeaconList, 500);
+		updateTimer = setInterval(displayBeaconListAndAccel, 500);
 	}
 
 	function startScan()
@@ -124,6 +162,7 @@ var app = (function()
 		}
 	}
 
+	// Original function: TODELETE!
 	function displayBeaconList()
 	{
 		// Clear beacon list.
@@ -159,6 +198,81 @@ var app = (function()
 				$('#found-beacons').append(element);
 			}
 		});
+	}
+
+
+	function displayBeaconListAndAccel()
+	{
+		// Clear accel list.
+		$('#accelerometer').empty();
+		// Create tag to display last accelerometer sample
+		var lastAcc = accelData.slice(-1)[0];
+		var accElem = $(
+			'<li>'
+			+	'X: ' + lastAcc.x + '<br />'
+			+	'Y: ' + lastAcc.y + '<br />'
+			+	'Z: ' + lastAcc.z + '<br />'
+			+ '</li>'
+		);
+		$('#accelerometer').append(accElem);
+
+		// Clear beacon list.
+		$('#found-beacons').empty();
+
+		var timeNow = Date.now();
+
+		beaconData.push({
+			timestamp: timeNow,
+			beacons: beacons
+		});
+
+		// Update beacon list.
+		$.each(beacons, function(key, beacon)
+		{
+			// Only show beacons that are updated during the last 60 seconds.
+			if (beacon.timeStamp + 60000 > timeNow)
+			{
+				// Map the RSSI value to a width in percent for the indicator.
+				var rssiWidth = 1; // Used when RSSI is zero or greater.
+				if (beacon.rssi < -100) { rssiWidth = 100; }
+				else if (beacon.rssi < 0) { rssiWidth = 100 + beacon.rssi; }
+
+				// Create tag to display beacon data.
+				var element = $(
+					'<li>'
+					+	'<strong>UUID: ' + beacon.uuid + '</strong><br />'
+					+	'Major: ' + beacon.major + '<br />'
+					+	'Minor: ' + beacon.minor + '<br />'
+					+	'Proximity: ' + beacon.proximity + '<br />'
+					+	'RSSI: ' + beacon.rssi + '<br />'
+					+ 	'<div style="background:rgb(255,128,64);height:20px;width:'
+					+ 		rssiWidth + '%;"></div>'
+					+ '</li>'
+				);
+
+				$('#warning').remove();
+				$('#found-beacons').append(element);
+			}
+		});
+
+		sendCleanupData();
+
+
+	}
+
+	function sendCleanupData()
+	{
+		//TODO: remove/change this check once we start sending data out
+		var N_REGS = 100; //How many data points we keep e.g., the last 100
+		if(accelData.length>N_REGS)
+		{
+			accelData = accelData.slice(-N_REGS);
+		}
+		if(beaconData.length>N_REGS)
+		{
+			beaconData = beaconData.slice(-N_REGS);
+		}
+		
 	}
 
 	return app;
