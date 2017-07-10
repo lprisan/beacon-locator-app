@@ -36,7 +36,7 @@ var app = (function()
 	var accelSummaries = []; // Less frequent data, fit to send to the server?
 
 	// xAPI stuff
-	var tincan = null;
+	var lrs = null;
 
 	app.initialize = function()
 	{
@@ -88,15 +88,21 @@ var app = (function()
 
 		initialiseAccelerometer();
 
-		tincan = new TinCan({
-            recordStores: [{
-                endpoint: "https://htk.tlu.ee/lrs/data/xAPI",
-                username: "4da0d771a634c608ff4c4730ba17fd8d9bc8ba8a",
-                password: "d753b5bf345d2c19e535f848cd350c0e9482f990",
-                allowFail: false
-            }]
-        });
 
+		try {
+			lrs = new TinCan.LRS(
+				{
+					endpoint: "https://htk.tlu.ee/lrs/data/xAPI",
+					username: "4da0d771a634c608ff4c4730ba17fd8d9bc8ba8a",
+					password: "d753b5bf345d2c19e535f848cd350c0e9482f990",
+					allowFail: false
+				}
+			);
+		}
+		catch (ex) {
+			console.log("Failed to setup LRS object: " + ex);
+			// TODO: do something with error, can't communicate with LRS
+		}
 
 		// Specify a shortcut for the location manager holding the iBeacon functions.
 		window.locationManager = cordova.plugins.locationManager;
@@ -348,24 +354,73 @@ var app = (function()
 	}
 
 	function sendPayload(payload){
+		//console.log("about to send payload "+JSON.stringify(payload));
 
-		tincan.sendStatement({
-                    "actor": {
-                        "name": deviceID,
-                        "account": {
-                            "homePage": "https://github.com/lprisan/classroom-tracker-app/",
-                            "name": "ClassroomTrackerApp"
-                        }
-                    },
-                    "verb": {
-                        "id": "http://adlnet.gov/expapi/verbs/experienced"
-                    },
-                    "object": {
-                        "id": "ClassroomTrackerApp-"+deviceID+"-"+Date.now(),
-                        "definition": payload
-                    }
-                });
+		var statement = new TinCan.Statement(
+			{
+				"actor": {
+					"name": "ClassroomTrackerApp for device "+deviceID,
+					"account": {
+						"homePage": "https://github.com/lprisan/classroom-tracker-app/",
+						"name": deviceID
+					},
+					"objectType": "Agent"
+				},
+				"verb": {
+					"id": "http://adlnet.gov/expapi/verbs/experienced",
+					"display": { 
+						"en-US": "experienced"
+					}
+				},
+				"object": {
+					"id": "https://github.com/lprisan/classroom-tracker-app/tree/modern-redo",
+					"definition": {
+						"type": "http://adlnet.gov/expapi/activities/interaction",
+						"name": {
+							"en-US": "Classroom Tracker App multimodal data"
+						},
+						"extensions": {
+							"https://github.com/lprisan/classroom-tracker-app/": payload
+						}
+						
+					}
+				}
+			}
+		);
 
+		$('#networkmsg').empty();
+		var nwElem = $('<li>Sending payload '+payload.accelData[0].timestamp+'...<br /></li>')
+		$('#networkmsg').append(nwElem);
+
+
+		lrs.saveStatement(
+			statement,
+			{
+				callback: function (err, xhr) {
+					if (err !== null) {
+						if (xhr !== null) {
+							console.log("Failed to save statement: " + xhr.responseText + " (" + xhr.status + ")");
+							// TODO: do something with error, didn't save statement
+							var nwElem = $('<li>Failed to save statement: ' + xhr.responseText + ' (' + xhr.status + ')<br /></li>')
+							$('#networkmsg').append(nwElem);
+
+							return;
+						}
+
+						console.log("Failed to save statement: " + err);
+						// TODO: do something with error, didn't save statement
+						var nwElem = $('<li>Failed to save statement: ' + err +'<br /></li>')
+						$('#networkmsg').append(nwElem);
+						
+						return;
+					}
+
+					console.log("Statement saved");
+					var nwElem = $('<li>Statement saved! <br /></li>')
+					$('#networkmsg').append(nwElem);
+				}
+			}
+		);
 
 	}
 
