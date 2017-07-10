@@ -25,13 +25,18 @@ var app = (function()
 
 	// Dictionary of beacons.
 	var beacons = {};
+	var deviceID = null;
 
 	// Timer that displays list of beacons.
 	var updateTimer = null;
 
 	// Array of data points, both for accelerometer and beacons
 	var accelData = [];
-	var beaconData = [];
+	var beaconData = []; // Gathered relatively less frequently
+	var accelSummaries = []; // Less frequent data, fit to send to the server?
+
+	// xAPI stuff
+	var tincan = null;
 
 	app.initialize = function()
 	{
@@ -40,6 +45,10 @@ var app = (function()
 			function() { evothings.scriptsLoaded(onDeviceReady) },
 			false);
 	};
+
+	function initialiseDevice(){
+		deviceID = device.uuid; //To be logged as actor in the xAPI statement
+	}
 
 
 	function initialiseAccelerometer()
@@ -75,7 +84,19 @@ var app = (function()
 	function onDeviceReady()
 	{
 
+		initialiseDevice();
+
 		initialiseAccelerometer();
+
+		tincan = new TinCan({
+            recordStores: [{
+                endpoint: "https://htk.tlu.ee/lrs/data/xAPI",
+                username: "4da0d771a634c608ff4c4730ba17fd8d9bc8ba8a",
+                password: "d753b5bf345d2c19e535f848cd350c0e9482f990",
+                allowFail: false
+            }]
+        });
+
 
 		// Specify a shortcut for the location manager holding the iBeacon functions.
 		window.locationManager = cordova.plugins.locationManager;
@@ -200,18 +221,79 @@ var app = (function()
 		});
 	}
 
+	function calculateAvgChange(data, nsamp=null){
+		var changes = [];
+		if(!nsamp || nsamp>data.length){ //If we don't say number of samples, or there are not enough, we just take all the data available
+			if(data.length>1){
+				for(var i=1; i<data.length;i++){
+					var change = Math.sqrt(Math.pow((data[i].x)-(data[i-1].x),2)+Math.pow((data[i].y)-(data[i-1].y),2)+Math.pow((data[i].z)-(data[i-1].z),2));
+					changes.push(change);
+				}
+				var total=0;
+				for(var j=0; j<changes.length; j++) {
+					total += changes[j]; 
+				}
+				return total/changes.length;
+			}else{
+				return 0;
+			}
+		}else{ // We set a number of samples, smaller than the available data
+			if(data.length>1){
+				for(var i=(data.length-nsamp+1); i<data.length;i++){
+					var change = Math.sqrt(Math.pow((data[i].x)-(data[i-1].x),2)+Math.pow((data[i].y)-(data[i-1].y),2)+Math.pow((data[i].z)-(data[i-1].z),2));
+					changes.push(change);
+				}
+				var total=0;
+				for(var j=0; j<changes.length; j++) {
+					total += changes[j]; 
+				}
+				return total/changes.length;
+			}else{
+				return 0;
+			}
+		}
+
+
+	}
+
+	function calculateAvgDelay(data){
+		var changes = [];
+		if(data.length>1){
+			for(var i=1; i<data.length;i++){
+				var change = (data[i].timestamp)-(data[i-1].timestamp);
+				changes.push(change);
+			}
+			var total=0;
+			for(var j=0; j<changes.length; j++) {
+				total += changes[j]; 
+			}
+			return Math.round(total/changes.length);
+		}else{
+			return 0;
+		}
+
+	}
 
 	function displayBeaconListAndAccel()
 	{
+		// Clear device list and display device UUID
+		$('#device').empty();
+		var deviceElem = $('<li>Device ID: '+deviceID+'<br /></li>')
+		$('#device').append(deviceElem);
+		
 		// Clear accel list.
 		$('#accelerometer').empty();
 		// Create tag to display last accelerometer sample
 		var lastAcc = accelData.slice(-1)[0];
+		var accFreq = calculateAvgDelay(accelData);
+		var nsamp = Math.round(1000/accFreq);
+		var accChange = calculateAvgChange(accelData, nsamp);
 		var accElem = $(
 			'<li>'
 			+	'X: ' + lastAcc.x + '<br />'
 			+	'Y: ' + lastAcc.y + '<br />'
 			+	'Z: ' + lastAcc.z + '<br />'
+			+	'Avg. change ('+ nsamp +' smp '+accFreq+'ms): ' + accChange + '<br />'
 			+ '</li>'
 		);
 		$('#accelerometer').append(accElem);
@@ -220,6 +302,11 @@ var app = (function()
 		$('#found-beacons').empty();
 
 		var timeNow = Date.now();
+
+		accelSummaries.push({
+			timestamp: timeNow,
+			change: accChange
+		})
 
 		beaconData.push({
 			timestamp: timeNow,
@@ -260,13 +347,51 @@ var app = (function()
 
 	}
 
+	function sendPayload(payload){
+
+		tincan.sendStatement({
+                    "actor": {
+                        "name": deviceID,
+                        "account": {
+                            "homePage": "https://github.com/lprisan/classroom-tracker-app/",
+                            "name": "ClassroomTrackerApp"
+                        }
+                    },
+                    "verb": {
+                        "id": "http://adlnet.gov/expapi/verbs/experienced"
+                    },
+                    "object": {
+                        "id": "ClassroomTrackerApp-"+deviceID+"-"+Date.now(),
+                        "definition": payload
+                    }
+                });
+
+
+	}
+
+
 	function sendCleanupData()
 	{
-		//TODO: remove/change this check once we start sending data out
-		var N_REGS = 100; //How many data points we keep e.g., the last 100
+		//Number of registries to be sent to LRS each time
+		var N_PAYLOAD = 20;
+		if(accelSummaries.length>=N_PAYLOAD){
+			var payload = {
+				beaconData: beaconData.slice(0,N_PAYLOAD),
+				accelData: accelSummaries.slice(0,N_PAYLOAD)
+			};
+			beaconData = beaconData.slice(N_PAYLOAD);
+			accelSummaries = accelSummaries.slice(N_PAYLOAD);
+			sendPayload(payload);
+		}
+
+		var N_REGS = 100; //How many data points we keep locally temporally e.g., the last 100
 		if(accelData.length>N_REGS)
 		{
 			accelData = accelData.slice(-N_REGS);
+		}
+		if(accelSummaries.length>N_REGS)
+		{
+			accelSummaries = accelSummaries.slice(-N_REGS);
 		}
 		if(beaconData.length>N_REGS)
 		{
@@ -274,6 +399,7 @@ var app = (function()
 		}
 		
 	}
+
 
 	return app;
 })();
