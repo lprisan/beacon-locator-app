@@ -161,7 +161,7 @@
                 // see https://github.com/adlnet/xAPI-Dashboard/blob/master/API_dashboard.md
 				var movementChart = dash.createLineChart({
 					container: '#lrsMovement svg',
-					//groupBy: 'actor.account.name',
+					groupBy: 'actor.account.name',
                     //pre: "object.definition.extensions.*.accelData.length > 0",
 					range: {
 						start: cutoff,
