@@ -59,7 +59,7 @@
 			}, 500);
 
 			var cutoff = new Date(Date.now());
-			cutoff = new Date(cutoff.getFullYear(),cutoff.getMonth(),cutoff.getDate()-30);
+			cutoff = new Date(cutoff.getFullYear(),cutoff.getMonth(),cutoff.getDate()-1);
 			cutoff = cutoff.toISOString();
 
 			dash.fetchAllStatements({since: cutoff}, wrapper, function()
@@ -162,7 +162,7 @@
 				var movementChart = dash.createLineChart({
 					container: '#lrsMovement svg',
 					groupBy: 'actor.account.name',
-                    pre: "object.definition.extensions.*.accelData.length > 0",
+                    //pre: "object.definition.extensions.*.accelData.length > 0",
 					range: {
 						start: cutoff,
 						end: (new Date(Date.now())).toISOString(),
