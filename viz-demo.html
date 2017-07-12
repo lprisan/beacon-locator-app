@@ -71,14 +71,17 @@
                   var samples = [];
                   for(var i=0; i<res.statements.length; i++){
                       var st = res.statements[i];
-                      console.log("Processing statement "+JSON.stringify(st));
-                      if(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
+                      console.log("Processing statement "+st);
+                      if(st.object.definition.extensions && st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
                           samples.push(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
                       }
                   }
-
-                  if (res.more && res.more !== ""){
-                     ADL.XAPIWrapper.getStatements(search, res.more, getmore);
+                  if(samples.length>=N_SAMPLES){
+                        samples.sort(function(a,b) {return (a.timestamp > b.timestamp) ? 1 : ((b.timestamp > a.timestamp) ? -1 : 0);} ); 
+                  }else{
+                      if (res.more && res.more !== ""){
+                         ADL.XAPIWrapper.getStatements(search, res.more, getmore);
+                      }
                   }
 
                   console.log(JSON.stringify(samples));
