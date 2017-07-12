@@ -10,5 +10,5 @@ A small Android application to track the location of a person in a classroom, us
 
 ## Demos
 
-### [Simple Data Viz Demo](viz-demo)
+### [Simple Data Viz Demo](viz-demo.html)
 Visualizes the data stream from a certain xAPI endpoint, using some basic Javascript
