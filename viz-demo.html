@@ -161,7 +161,7 @@
                 // see https://github.com/adlnet/xAPI-Dashboard/blob/master/API_dashboard.md
 				var movementChart = dash.createLineChart({
 					container: '#lrsMovement svg',
-					groupBy: 'actor.account.name',
+					//groupBy: 'actor.account.name',
                     //pre: "object.definition.extensions.*.accelData.length > 0",
 					range: {
 						start: cutoff,
@@ -169,17 +169,17 @@
 						increment: 1000*3600
 					},
 					rangeLabel: 'start',
-					aggregate: ADL.count(),
-					post: function(data){
-						data.contents.map(function(el){
-							el.in = Date.parse(el.in);
-						});
-					},
-					customize: function(nvd3chart){
-						nvd3chart.xAxis.tickFormat(function(label){
-							return d3.time.format('%H:%M')(new Date(label));
-						});
-					}
+					aggregate: ADL.count()//,
+					// post: function(data){
+					// 	data.contents.map(function(el){
+					// 		el.in = Date.parse(el.in);
+					// 	});
+					// },
+					// customize: function(nvd3chart){
+					// 	nvd3chart.xAxis.tickFormat(function(label){
+					// 		return d3.time.format('%H:%M')(new Date(label));
+					// 	});
+					// }
 				});
 				movementChart.draw();
 
