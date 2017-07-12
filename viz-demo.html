@@ -73,7 +73,7 @@
                       var st = res.statements[i];
                       console.log("Processing statement "+st);
                       if(st.object.definition.extensions && st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
-                          samples.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
+                          samples = samples.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
                       }
                   }
                   if(samples.length>=N_SAMPLES){
