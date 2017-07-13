@@ -4,6 +4,7 @@ description: Simple xAPI data visualization with live updates
 layout: graphs
 ---
 
+# Simple data visualization demo
 
 <div id='graphContainer'>
     <div id='lrsMovement' class='container'>

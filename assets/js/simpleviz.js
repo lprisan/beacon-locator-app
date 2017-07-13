@@ -101,7 +101,7 @@ document.getElementById("liveUpdate").addEventListener("click", function(){
     }
     else{
         updating=true;
-        queryHandle = setInterval(query, 2000);
+        queryHandle = setInterval(query, 4000);
         document.getElementById("liveUpdate").innerHTML = "Click to STOP live update";
     }
 });
