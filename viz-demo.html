@@ -49,7 +49,7 @@
 
 	</head>
 	<body>
-		<span id='status'>Fetching data</span>
+		<span id='status'></span>
 		<div id='graphContainer'>
 			<!--div id='verbs' class='container'>
 				<svg></svg>
@@ -70,9 +70,7 @@
                 'auth':  "Basic " + toBase64('4da0d771a634c608ff4c4730ba17fd8d9bc8ba8a:d753b5bf345d2c19e535f848cd350c0e9482f990')
             });
 
-			var handle = setInterval(function(){
-				document.querySelector('span').innerHTML += '.';
-			}, 500);
+			var dotsHandle=null;
 
             var search = ADL.XAPIWrapper.searchParams();
             search['verb'] = ADL.verbs.experienced.id;
@@ -80,36 +78,51 @@
             //TODO: call the getSTatements every second?
             var chart=null; // where the movement line chart will be drawn
 
-            // asynchronous call
-            ADL.XAPIWrapper.getStatements(search, null,
-               function getmore(r){
-                  var res = JSON.parse(r.response);
-                  //ADL.XAPIWrapper.log(res.statements);
-                  console.log("Received "+res.statements.length+" from "+res.statements[0].stored+" to "+res.statements[res.statements.length-1].stored);
-                  //We extract the samples to display
-                  var samples = [];
-                  for(var i=0; i<res.statements.length; i++){
-                      var st = res.statements[i];
-                      console.log("Processing statement "+st);
-                      if(st.object.definition.extensions && st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
-                          samples = samples.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
+
+            var query = function(){
+                // We start putting dots while we make the query
+                document.querySelector('#status').innerHTML = 'Fetching data';
+                dotsHandle = setInterval(function(){
+    				document.querySelector('#status').innerHTML += '.';
+    			}, 500);
+
+                // asynchronous call
+                ADL.XAPIWrapper.getStatements(search, null,
+                   function getmore(r){
+                      var res = JSON.parse(r.response);
+                      //ADL.XAPIWrapper.log(res.statements);
+                      console.log("Received "+res.statements.length+" from "+res.statements[0].stored+" to "+res.statements[res.statements.length-1].stored);
+                      //We extract the samples to display
+                      var samples = [];
+                      for(var i=0; i<res.statements.length; i++){
+                          var st = res.statements[i];
+                          console.log("Processing statement "+st);
+                          if(st.object.definition.extensions && st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
+                              samples = samples.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
+                          }
                       }
-                  }
-                  if(samples.length>=N_SAMPLES){
-                        //sort from higher (newer) to lower
-                        samples = samples.sort(function(a,b) {return (a.timestamp > b.timestamp) ? -1 : ((b.timestamp > a.timestamp) ? 1 : 0);} ).slice(0,N_SAMPLES);
-                  }else{
-                      if (res.more && res.more !== ""){
-                         ADL.XAPIWrapper.getStatements(search, res.more, getmore);
+                      if(samples.length>=N_SAMPLES){
+                            //sort from higher (newer) to lower
+                            samples = samples.sort(function(a,b) {return (a.timestamp > b.timestamp) ? -1 : ((b.timestamp > a.timestamp) ? 1 : 0);} ).slice(0,N_SAMPLES);
+                      }else{
+                          if (res.more && res.more !== ""){
+                             ADL.XAPIWrapper.getStatements(search, res.more, getmore);
+                          }
                       }
-                  }
 
-                  console.log(JSON.stringify(samples));
-                  drawGraph(samples);
+                      clearInterval(dotsHandle); //stop the dots
 
-               });
+                      console.log(JSON.stringify(samples));
+                      drawGraph(samples);
 
-            // See http://bl.ocks.org/d3noob/b3ff6ae1c120eea654b5
+                   });
+
+
+            }
+
+            var queryHandle = setInterval(query, 2000);
+
+
             var drawGraph = function(data){
 
                 var data1 = ['data1'];
