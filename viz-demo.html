@@ -27,6 +27,20 @@
 				height: 300px;
 				overflow: hidden;
 			}
+
+            path {
+                stroke: steelblue;
+                stroke-width: 2;
+                fill: none;
+            }
+
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: grey;
+                stroke-width: 1;
+                shape-rendering: crispEdges;
+            }
 		</style>
 
 	</head>
@@ -59,6 +73,10 @@
 
             var search = ADL.XAPIWrapper.searchParams();
             search['verb'] = ADL.verbs.experienced.id;
+
+            //TODO: call the getSTatements every second?
+
+
             // synchronous call
             //var res = ADL.XAPIWrapper.getStatements(search);
             //ADL.XAPIWrapper.log(res.statements);
@@ -86,11 +104,72 @@
                   }
 
                   console.log(JSON.stringify(samples));
-                  //TODO: draw the graph
+                  drawGraph(samples);
 
                });
 
+            // See http://bl.ocks.org/d3noob/b3ff6ae1c120eea654b5
+            var drawGraph = function(data){
 
+                var margin = {top: 30, right: 20, bottom: 30, left: 50},
+                width = 600 - margin.left - margin.right,
+                height = 270 - margin.top - margin.bottom;
+
+                // Parse the date / time
+                var parseDate = d3.time.format("%d-%b-%y %H:%M:%S.%L").parse;
+
+                // Set the ranges
+                var x = d3.time.scale().range([0, width]);
+                var y = d3.scale.linear().range([height, 0]);
+
+                // Define the axes
+                var xAxis = d3.svg.axis().scale(x)
+                    .orient("bottom").ticks(5);
+
+                var yAxis = d3.svg.axis().scale(y)
+                    .orient("left").ticks(5);
+
+                // Define the line
+                var valueline = d3.svg.line()
+                    .x(function(d) { return x(new Date(d.timestamp)); })
+                    .y(function(d) { return y(d.change); });
+
+                // Adds the svg canvas
+                var svg = d3.select("#lrsMovement")
+                    .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                        .attr("transform",
+                              "translate(" + margin.left + "," + margin.top + ")");
+
+                  data.forEach(function(d) {
+                          d.timestamp = parseDate(new Date(d.timestamp));
+                          d.change = +d.change;
+                      });
+
+                  // Scale the range of the data
+                  x.domain(d3.extent(data, function(d) { return new Date(d.timestamp); }));
+                  y.domain([0, d3.max(data, function(d) { return d.change; })]);
+
+                  // Add the valueline path.
+                  svg.append("path")
+                      .attr("class", "line")
+                      .attr("d", valueline(data));
+
+                  // Add the X Axis
+                  svg.append("g")
+                      .attr("class", "x axis")
+                      .attr("transform", "translate(0," + height + ")")
+                      .call(xAxis);
+
+                  // Add the Y Axis
+                  svg.append("g")
+                      .attr("class", "y axis")
+                      .call(yAxis);
+
+
+            }
 		</script>
 	</body>
 </html>
