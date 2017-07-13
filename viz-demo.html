@@ -4,8 +4,9 @@
 		<title>Live LRS Demo</title>
 		<!--link rel='stylesheet' href='assets/css/nv.d3.css'/-->
         <link rel='stylesheet' href='assets/css/c3.min.css'/>
-		<script type="text/javascript" src="assets/js/d3.v3.js" charset="utf-8"></script>
-        <script src="assets/js/c3.min.js"></script>
+		<!--script type="text/javascript" src="assets/js/d3.v3.js" charset="utf-8"></script-->
+        <script src="https://d3js.org/d3.v3.min.js"></script>
+        <script type="text/javascript" src="assets/js/c3.min.js"></script>
 
 		<!--script type="text/javascript" src="assets/js/nv.d3.js"></script-->
 		<script type="text/javascript" src="assets/js/xapiwrapper.min.js"></script>
@@ -49,8 +50,8 @@
 	</head>
 	<body>
 		<span id='status'>Fetching data</span>
-		<!--div id='graphContainer'>
-			<div id='verbs' class='container'>
+		<div id='graphContainer'>
+			<!--div id='verbs' class='container'>
 				<svg></svg>
 			</div>
 			<div id='lrsActivity' class='container'>
@@ -77,11 +78,9 @@
             search['verb'] = ADL.verbs.experienced.id;
 
             //TODO: call the getSTatements every second?
+            var chart=null; // where the movement line chart will be drawn
 
-
-            // synchronous call
-            //var res = ADL.XAPIWrapper.getStatements(search);
-            //ADL.XAPIWrapper.log(res.statements);
+            // asynchronous call
             ADL.XAPIWrapper.getStatements(search, null,
                function getmore(r){
                   var res = JSON.parse(r.response);
@@ -120,14 +119,25 @@
                     data1.push(d.change);
                 });
 
-                var chart = c3.generate({
-                    bindto: '#lrsMovement',
-                    data: {
-                      columns: [
-                        data1
-                      ]
-                    }
-                });
+                console.log("generating graph for "+JSON.stringify(data1));
+
+                if(!chart){
+                    chart = c3.generate({
+                        bindto: '#lrsMovement',
+                        data: {
+                          columns: [
+                            data1
+                          ]
+                        }
+                    });
+                }else{
+                    chart.load({
+                        columns: [
+                            data1
+                        ]
+                    });
+                }
+
             }
 		</script>
 	</body>
