@@ -115,6 +115,7 @@
                       }
 
                       clearInterval(dotsHandle); //stop the dots
+                      document.getElementById("status").innerHTML = "";
 
                       console.log(JSON.stringify(samples));
                       drawGraph(samples);
