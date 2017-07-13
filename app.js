@@ -1,3 +1,16 @@
+var sending=false;
+//Button toggles the live update
+document.getElementById("sendToggle").addEventListener("click", function(){
+    if(sending){//we were updating, stop doing the queries
+        sending=false;
+        document.getElementById("sendToggle").innerHTML = "Start sending data";
+    }
+    else{
+        sending=true;
+        document.getElementById("sendToggle").innerHTML = "STOP sending data";
+    }
+});
+
 var app = (function()
 {
 	// Application object.
@@ -436,7 +449,7 @@ var app = (function()
 			};
 			beaconData = beaconData.slice(N_PAYLOAD);
 			accelSummaries = accelSummaries.slice(N_PAYLOAD);
-			sendPayload(payload);
+			if(sending) sendPayload(payload);
 		}
 
 		var N_REGS = 100; //How many data points we keep locally temporally e.g., the last 100
