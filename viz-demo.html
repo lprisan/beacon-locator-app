@@ -63,6 +63,7 @@
             <div id='lrsMovement' class='container'>
 			</div>
 		</div>
+        <div id="buttons"><button id="liveUpdate" class="clear">Click to live update</button></div>
 		<script>
             var N_SAMPLES = 100; //number of acc samples to show
 			var wrapper = ADL.XAPIWrapper;
@@ -71,11 +72,14 @@
             });
 
 			var dotsHandle=null;
+            var queryHandle=null;
+            var updating = false;
+
+
 
             var search = ADL.XAPIWrapper.searchParams();
             search['verb'] = ADL.verbs.experienced.id;
 
-            //TODO: call the getSTatements every second?
             var chart=null; // where the movement line chart will be drawn
 
 
@@ -120,7 +124,6 @@
 
             }
 
-            var queryHandle = setInterval(query, 2000);
 
 
             var drawGraph = function(data){
@@ -152,6 +155,24 @@
                 }
 
             }
+
+            //Button toggles the live update
+            document.getElementById("liveUpdate").addEventListener("click", function(){
+                if(updating){//we were updating, stop doing the queries
+                    updating=false;
+                    document.getElementById("liveUpdate").innerHTML = "Click to live update";
+                    clearInterval(queryHandle); //stop the dots
+                    document.getElementById("status").innerHTML = "";
+
+                }
+                else{
+                    updating=true;
+                    queryHandle = setInterval(query, 2000);
+                    document.getElementById("liveUpdate").innerHTML = "Click to STOP live update";
+                }
+            });
+
+            query();
 		</script>
 	</body>
 </html>
