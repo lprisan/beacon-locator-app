@@ -1,16 +1,3 @@
-var sending=false;
-//Button toggles the live update
-document.getElementById("sendToggle").addEventListener("click", function(){
-    if(sending){//we were updating, stop doing the queries
-        sending=false;
-        document.getElementById("sendToggle").innerHTML = "Start sending data";
-    }
-    else{
-        sending=true;
-        document.getElementById("sendToggle").innerHTML = "STOP sending data";
-    }
-});
-
 var app = (function()
 {
 	// Application object.
@@ -29,6 +16,10 @@ var app = (function()
 		{uuid:'A4950001-C5B1-4B44-B512-1370F02D74DE'},
 		{uuid:'585CDE93-1B01-42CC-9A13-25009BEDC65E'},	// Dialog Semiconductor.
 	];
+
+
+	var sending=false;
+
 
 	// Background detection.
 	var notificationID = 0;
@@ -100,6 +91,19 @@ var app = (function()
 		initialiseDevice();
 
 		initialiseAccelerometer();
+
+
+		//Button toggles the live update
+		document.getElementById("sendToggle").addEventListener("click", function(){
+			if(sending){//we were updating, stop doing the queries
+				sending=false;
+				document.getElementById("sendToggle").innerHTML = "Start sending data";
+			}
+			else{
+				sending=true;
+				document.getElementById("sendToggle").innerHTML = "STOP sending data";
+			}
+		});
 
 
 		try {
