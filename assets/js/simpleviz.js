@@ -31,16 +31,27 @@ var query = function(){
           console.log("Received "+res.statements.length+" from "+res.statements[0].stored+" to "+res.statements[res.statements.length-1].stored);
           //We extract the samples to display
           var samples = [];
+		  var samples2 = [];
           for(var i=0; i<res.statements.length; i++){
               var st = res.statements[i];
               console.log("Processing statement "+st);
               if(st.object.definition.extensions && st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"]){//If it's a classroom tracker statement
                   samples = samples.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].accelData);
+				  samples2 = samples2.concat(st.object.definition.extensions["https://github.com/lprisan/classroom-tracker-app/"].beaconData);
               }
           }
           if(samples.length>=N_SAMPLES){
                 //sort from higher (newer) to lower
                 samples = samples.sort(function(a,b) {return (a.timestamp > b.timestamp) ? -1 : ((b.timestamp > a.timestamp) ? 1 : 0);} ).slice(0,N_SAMPLES);
+          }else{
+              if (res.more && res.more !== ""){
+                 ADL.XAPIWrapper.getStatements(search, res.more, getmore);
+              }
+          }
+		  
+		  if(samples2.length>=N_SAMPLES){
+                //sort from higher (newer) to lower
+                samples2 = samples2.sort(function(a,b) {return (a.timestamp > b.timestamp) ? -1 : ((b.timestamp > a.timestamp) ? 1 : 0);} ).slice(0,N_SAMPLES);
           }else{
               if (res.more && res.more !== ""){
                  ADL.XAPIWrapper.getStatements(search, res.more, getmore);
@@ -52,6 +63,7 @@ var query = function(){
 
           console.log(JSON.stringify(samples));
           drawGraph(samples);
+		  drawGraph2(samples2);//For the beacons
 
        });
 
@@ -89,6 +101,56 @@ var drawGraph = function(data){
     }
 
 }
+
+var drawGraph2 = function(data){
+
+    var data1 = ['data1'];
+    var data2 = ['data2'];
+    var data3 = ['data3'];
+    var times = ['times'];
+    data.forEach(function(d) {
+        times.push(new Date(d.timestamp));
+		for(beacon in d.beacons){//TODO: Finish/test/relabel!!!!!
+			if(beacon == "b9407f30-f5f8-466e-aff9-25556b57fe6d:157:125"){
+					data1.push(d.beacons[beacon].rssi);
+			}else if(beacon == "b9407f30-f5f8-466e-aff9-25556b57fe6d:43679:36240"){
+					data2.push(d.beacons[beacon].rssi);
+			}else if(beacon == "b9407f30-f5f8-466e-aff9-25556b57fe6d:48779:65407"){
+					data3.push(d.beacons[beacon].rssi);
+			}
+		}
+		
+		
+    });
+
+    console.log("generating graph for "+JSON.stringify(data1)+JSON.stringify(data2)+JSON.stringify(data3));
+
+    if(!chart){
+        chart = c3.generate({
+            bindto: '#lrsBeacons',
+            data: {
+              columns: [
+                data1,
+				data2,
+				data3
+              ]
+            }
+        });
+    }else{
+        chart.load({
+            columns: [
+                data1,
+				data2,
+				data3
+            ]
+        });
+    }
+
+}
+
+
+
+
 
 //Button toggles the live update
 document.getElementById("liveUpdate").addEventListener("click", function(){

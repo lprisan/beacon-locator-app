@@ -9,6 +9,8 @@ layout: graphs
 <div id='graphContainer'>
     <div id='lrsMovement' class='container'>
     </div>
+    <div id='lrsBeacons' class='container'>
+    </div>
 </div>
 <div id="buttons"><button id="liveUpdate" class="clear">Click to live update</button></div>
 <span id='status'></span>
