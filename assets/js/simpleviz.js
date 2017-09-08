@@ -104,9 +104,9 @@ var drawGraph = function(data){
 
 var drawGraph2 = function(data){
 
-    var data1 = ['data1'];
-    var data2 = ['data2'];
-    var data3 = ['data3'];
+    var data1 = ['desk'];
+    var data2 = ['board'];
+    var data3 = ['door'];
     var times = ['times'];
     data.forEach(function(d) {
         times.push(new Date(d.timestamp));
