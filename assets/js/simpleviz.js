@@ -14,7 +14,7 @@ var search = ADL.XAPIWrapper.searchParams();
 search['verb'] = ADL.verbs.experienced.id;
 
 var chart=null; // where the movement line chart will be drawn
-
+var chart2=null; //Where the beacons line chart will be drawn
 
 var query = function(){
     // We start putting dots while we make the query
@@ -125,8 +125,8 @@ var drawGraph2 = function(data){
 
     console.log("generating graph for "+JSON.stringify(data1)+JSON.stringify(data2)+JSON.stringify(data3));
 
-    if(!chart){
-        chart = c3.generate({
+    if(!chart2){
+        chart2 = c3.generate({
             bindto: '#lrsBeacons',
             data: {
               columns: [
@@ -137,7 +137,7 @@ var drawGraph2 = function(data){
             }
         });
     }else{
-        chart.load({
+        chart2.load({
             columns: [
                 data1,
 				data2,
