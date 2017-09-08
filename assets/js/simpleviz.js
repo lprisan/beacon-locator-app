@@ -74,7 +74,7 @@ var query = function(){
 
 var drawGraph = function(data){
 
-    var data1 = ['data1'];
+    var data1 = ['acc. change'];
     var times = ['times'];
     data.forEach(function(d) {
         times.push(new Date(d.timestamp));
@@ -90,7 +90,15 @@ var drawGraph = function(data){
               columns: [
                 data1
               ]
-            }
+            },
+			axis: {
+				y: {
+					max: 15,
+					min: 0,
+					// Range includes padding, set 0 if no padding needed
+					// padding: {top:0, bottom:0}
+				}
+			}
         });
     }else{
         chart.load({
@@ -134,7 +142,15 @@ var drawGraph2 = function(data){
 				data2,
 				data3
               ]
-            }
+            },
+			axis: {
+				y: {
+					max: -40,
+					min: -100,
+					// Range includes padding, set 0 if no padding needed
+					// padding: {top:0, bottom:0}
+				}
+			}
         });
     }else{
         chart2.load({
