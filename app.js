@@ -1,3 +1,125 @@
+$(document).ready(function() {
+	$("#record").hide();
+	$("#stop").hide();
+    $("#record").click(function(){
+        $("#record").hide();
+        $("#stop").show();
+        startLogging();
+    });
+    $("#stop").click(function(){
+        $("#stop").hide();
+        $("#record").show();
+        stopLogging();
+    });
+});
+
+var dataDir;
+var logging = false;
+var logOb;//object for beacons log
+var logOb2;//object for accel log
+
+function initializeLogs(){
+	//$("#textexp").append("beforefile");
+	//Check that the global file object is available
+    console.log(cordova.file);
+    //We get the directory where things will go, see http://www.raymondcamden.com/2014/11/05/Cordova-Example-Writing-to-a-file
+	window.resolveLocalFileSystemURL(cordova.file.externalRootDirectory, function(dir) {
+		dataDir = dir; //We store it for later use
+		//console.log("got main dir",dir);
+		//alert("got main dir "+dir.fullPath);
+		$("#record").show();
+		//$("#textexp").append("got main dir "+dir.fullPath);
+	});
+
+}
+
+function startLogging(){
+	logging = true;
+	//TODO: Create the log file with timestamp as name and empty data
+	var filename = "locator-app-"+Date.now()+".txt";
+		dataDir.getFile(filename, {create:true}, function(file) {
+		 	//console.log("got the file", file);
+		 	//alert("got the file "+file);
+			//$("#textexp").append("got the file "+file.fullPath);
+		 	logOb = file;
+		 	writeLog("[]");
+		});
+	//We do the same for the accelerometer data
+	var filename2 = "accelerometer-app-"+Date.now()+".txt";
+		dataDir.getFile(filename2, {create:true}, function(file) {
+		 	//console.log("got the file", file);
+		 	//alert("got the file "+file);
+			//$("#textexp").append("got the file "+file.fullPath);
+		 	logOb2 = file;
+		 	writeLog2("[]");
+		});
+}
+
+function stopLogging(){
+	logging = false;
+	writeLog(JSON.stringify(logRegisters));
+	logRegisters = [];
+
+	writeLog2(JSON.stringify(logRegisters2));
+	logRegisters2 = [];
+}
+
+var logRegisters = [];
+var logRegisters2 = [];
+var LOGS_PER_WRITE = 30;//Number of log entries to wait in memory before we actually write to file beacons (1/sec)
+var LOGS_PER_WRITE2 = 200;//Number of log entries to wait in memory before we actually write to file accelerometer (20/sec)
+
+
+function fail(e) {
+	//console.log("FileSystem Error");
+	alert("FileSystem Error");
+	console.dir(e);
+}
+
+function writeLog(str) {
+	if(!logOb){
+	 //console.log("Log file not found!");
+	 alert("Beacon Log file not found!");
+	 return;
+	}
+	var log = str;
+	//console.log("going to log "+log);
+	//alert("going to log "+log);
+	logOb.createWriter(function(fileWriter) {
+
+		fileWriter.seek(fileWriter.length);
+
+		var blob = new Blob([log], {type:'text/plain'});
+		fileWriter.write(blob);
+		//$("#textexp").append("ok, in theory i logged");
+		//console.log("ok, in theory i worked");
+	}, fail);
+}
+
+function writeLog2(str) {
+	if(!logOb2){
+	 //console.log("Log file not found!");
+	 alert("Accel Log file not found!");
+	 return;
+	}
+	var log = str;
+	//console.log("going to log "+log);
+	//alert("going to log "+log);
+	logOb2.createWriter(function(fileWriter) {
+
+		fileWriter.seek(fileWriter.length);
+
+		var blob = new Blob([log], {type:'text/plain'});
+		fileWriter.write(blob);
+		//$("#textexp").append("ok, in theory i logged");
+		//console.log("ok, in theory i worked");
+	}, fail);
+}
+
+
+
+
+
 var app = (function()
 {
 	// Application object.
@@ -75,14 +197,35 @@ var app = (function()
 
 	function accelerometerHandler(accelerationX, accelerationY, accelerationZ)
 	{
-		// Update the data array with the timestamped data
-		var sample = {
-			timestamp: Date.now(),
-			x: accelerationX,
-			y: accelerationY,
-			z: accelerationZ
-		};
-		accelData.push(sample);
+		$('#found-accelerometer').empty();
+
+
+		// Create tag to display beacon data.
+		var element = $(
+			'<li>'
+			+	'X: ' + accelerationX + '<br />'
+			+	'Y: ' + accelerationY + '<br />'
+			+	'Z: ' + accelerationZ + '<br />'
+			+ '</li>'
+		);
+
+		$('#found-accelerometer').append(element);
+
+		if(logging){
+			//Add timestamp and log registers to the logging variable
+			var logEntry = {};
+			logEntry.accelerationX = accelerationX;
+			logEntry.accelerationY = accelerationY;
+			logEntry.accelerationZ = accelerationZ;
+			logEntry.timestamp = timestamp
+			logRegisters2.push(logEntry);
+		}
+
+		//If 5 seconds have passed, we append the variable to the file
+		if(logRegisters2.length>=LOGS_PER_WRITE2){
+		 writeLog(JSON.stringify(logRegisters2));
+		 logRegisters2 = [];
+		}
 	}
 
 	function onDeviceReady()
@@ -93,33 +236,6 @@ var app = (function()
 		initialiseAccelerometer();
 
 
-		//Button toggles the live update
-		document.getElementById("sendToggle").addEventListener("click", function(){
-			if(sending){//we were updating, stop doing the queries
-				sending=false;
-				document.getElementById("sendToggle").innerHTML = "Start sending data";
-			}
-			else{
-				sending=true;
-				document.getElementById("sendToggle").innerHTML = "STOP sending data";
-			}
-		});
-
-
-		try {
-			lrs = new TinCan.LRS(
-				{
-					endpoint: "https://htk.tlu.ee/lrs/data/xAPI",
-					username: "4da0d771a634c608ff4c4730ba17fd8d9bc8ba8a",
-					password: "d753b5bf345d2c19e535f848cd350c0e9482f990",
-					allowFail: false
-				}
-			);
-		}
-		catch (ex) {
-			console.log("Failed to setup LRS object: " + ex);
-			// TODO: do something with error, can't communicate with LRS
-		}
 
 		// Specify a shortcut for the location manager holding the iBeacon functions.
 		window.locationManager = cordova.plugins.locationManager;
@@ -206,96 +322,6 @@ var app = (function()
 		}
 	}
 
-	// Original function: TODELETE!
-	function displayBeaconList()
-	{
-		// Clear beacon list.
-		$('#found-beacons').empty();
-
-		var timeNow = Date.now();
-
-		// Update beacon list.
-		$.each(beacons, function(key, beacon)
-		{
-			// Only show beacons that are updated during the last 60 seconds.
-			if (beacon.timeStamp + 60000 > timeNow)
-			{
-				// Map the RSSI value to a width in percent for the indicator.
-				var rssiWidth = 1; // Used when RSSI is zero or greater.
-				if (beacon.rssi < -100) { rssiWidth = 100; }
-				else if (beacon.rssi < 0) { rssiWidth = 100 + beacon.rssi; }
-
-				// Create tag to display beacon data.
-				var element = $(
-					'<li>'
-					+	'<strong>UUID: ' + beacon.uuid + '</strong><br />'
-					+	'Major: ' + beacon.major + '<br />'
-					+	'Minor: ' + beacon.minor + '<br />'
-					+	'Proximity: ' + beacon.proximity + '<br />'
-					+	'RSSI: ' + beacon.rssi + '<br />'
-					+ 	'<div style="background:rgb(255,128,64);height:20px;width:'
-					+ 		rssiWidth + '%;"></div>'
-					+ '</li>'
-				);
-
-				$('#warning').remove();
-				$('#found-beacons').append(element);
-			}
-		});
-	}
-
-	function calculateAvgChange(data, nsamp=null){
-		var changes = [];
-		if(!nsamp || nsamp>data.length){ //If we don't say number of samples, or there are not enough, we just take all the data available
-			if(data.length>1){
-				for(var i=1; i<data.length;i++){
-					var change = Math.sqrt(Math.pow((data[i].x)-(data[i-1].x),2)+Math.pow((data[i].y)-(data[i-1].y),2)+Math.pow((data[i].z)-(data[i-1].z),2));
-					changes.push(change);
-				}
-				var total=0;
-				for(var j=0; j<changes.length; j++) {
-					total += changes[j]; 
-				}
-				return total/changes.length;
-			}else{
-				return 0;
-			}
-		}else{ // We set a number of samples, smaller than the available data
-			if(data.length>1){
-				for(var i=(data.length-nsamp+1); i<data.length;i++){
-					var change = Math.sqrt(Math.pow((data[i].x)-(data[i-1].x),2)+Math.pow((data[i].y)-(data[i-1].y),2)+Math.pow((data[i].z)-(data[i-1].z),2));
-					changes.push(change);
-				}
-				var total=0;
-				for(var j=0; j<changes.length; j++) {
-					total += changes[j]; 
-				}
-				return total/changes.length;
-			}else{
-				return 0;
-			}
-		}
-
-
-	}
-
-	function calculateAvgDelay(data){
-		var changes = [];
-		if(data.length>1){
-			for(var i=1; i<data.length;i++){
-				var change = (data[i].timestamp)-(data[i-1].timestamp);
-				changes.push(change);
-			}
-			var total=0;
-			for(var j=0; j<changes.length; j++) {
-				total += changes[j]; 
-			}
-			return Math.round(total/changes.length);
-		}else{
-			return 0;
-		}
-
-	}
 
 	function displayBeaconListAndAccel()
 	{
@@ -303,7 +329,7 @@ var app = (function()
 		$('#device').empty();
 		var deviceElem = $('<li>Device ID: '+deviceID+'<br /></li>')
 		$('#device').append(deviceElem);
-		
+
 		// Clear accel list.
 		$('#accelerometer').empty();
 		// Create tag to display last accelerometer sample
@@ -326,16 +352,6 @@ var app = (function()
 
 		var timeNow = Date.now();
 
-		accelSummaries.push({
-			timestamp: timeNow,
-			change: accChange
-		})
-
-		beaconData.push({
-			timestamp: timeNow,
-			beacons: beacons
-		});
-
 		// Update beacon list.
 		$.each(beacons, function(key, beacon)
 		{
@@ -362,114 +378,28 @@ var app = (function()
 
 				$('#warning').remove();
 				$('#found-beacons').append(element);
+
+				if(logging){
+					//Add timestamp and log registers to the logging variable
+					var logEntry = {};
+					logEntry.timestamp = beacon.timeStamp;
+					logEntry.beaconID = beacon.major+"-"+beacon.minor;
+					logEntry.proximity = beacon.proximity;
+					logEntry.rssi = beacon.rssi;
+					logRegisters.push(logEntry);
+				}
+
 			}
 		});
 
-		sendCleanupData();
-
-
-	}
-
-	function sendPayload(payload){
-		//console.log("about to send payload "+JSON.stringify(payload));
-
-		var statement = new TinCan.Statement(
-			{
-				"actor": {
-					"name": "ClassroomTrackerApp for device "+deviceID,
-					"account": {
-						"homePage": "https://github.com/lprisan/classroom-tracker-app/",
-						"name": deviceID
-					},
-					"objectType": "Agent"
-				},
-				"verb": {
-					"id": "http://adlnet.gov/expapi/verbs/experienced",
-					"display": { 
-						"en-US": "experienced"
-					}
-				},
-				"object": {
-					"id": "https://github.com/lprisan/classroom-tracker-app/tree/modern-redo",
-					"definition": {
-						"type": "http://adlnet.gov/expapi/activities/interaction",
-						"name": {
-							"en-US": "Classroom Tracker App multimodal data"
-						},
-						"extensions": {
-							"https://github.com/lprisan/classroom-tracker-app/": payload
-						}
-						
-					}
-				}
-			}
-		);
-
-		$('#networkmsg').empty();
-		var nwElem = $('<li>Sending payload '+payload.accelData[0].timestamp+'...<br /></li>')
-		$('#networkmsg').append(nwElem);
-
-
-		lrs.saveStatement(
-			statement,
-			{
-				callback: function (err, xhr) {
-					if (err !== null) {
-						if (xhr !== null) {
-							console.log("Failed to save statement: " + xhr.responseText + " (" + xhr.status + ")");
-							// TODO: do something with error, didn't save statement
-							var nwElem = $('<li>Failed to save statement: ' + xhr.responseText + ' (' + xhr.status + ')<br /></li>')
-							$('#networkmsg').append(nwElem);
-
-							return;
-						}
-
-						console.log("Failed to save statement: " + err);
-						// TODO: do something with error, didn't save statement
-						var nwElem = $('<li>Failed to save statement: ' + err +'<br /></li>')
-						$('#networkmsg').append(nwElem);
-						
-						return;
-					}
-
-					console.log("Statement saved");
-					var nwElem = $('<li>Statement saved! <br /></li>')
-					$('#networkmsg').append(nwElem);
-				}
-			}
-		);
-
-	}
-
-
-	function sendCleanupData()
-	{
-		//Number of registries to be sent to LRS each time
-		var N_PAYLOAD = 20;
-		if(accelSummaries.length>=N_PAYLOAD){
-			var payload = {
-				beaconData: beaconData.slice(0,N_PAYLOAD),
-				accelData: accelSummaries.slice(0,N_PAYLOAD)
-			};
-			beaconData = beaconData.slice(N_PAYLOAD);
-			accelSummaries = accelSummaries.slice(N_PAYLOAD);
-			if(sending) sendPayload(payload);
+		//If 5 seconds have passed, we append the variable to the file
+		if(logRegisters.length>=LOGS_PER_WRITE){
+		 writeLog(JSON.stringify(logRegisters));
+		 logRegisters = [];
 		}
 
-		var N_REGS = 100; //How many data points we keep locally temporally e.g., the last 100
-		if(accelData.length>N_REGS)
-		{
-			accelData = accelData.slice(-N_REGS);
-		}
-		if(accelSummaries.length>N_REGS)
-		{
-			accelSummaries = accelSummaries.slice(-N_REGS);
-		}
-		if(beaconData.length>N_REGS)
-		{
-			beaconData = beaconData.slice(-N_REGS);
-		}
-		
+
+
 	}
 
 

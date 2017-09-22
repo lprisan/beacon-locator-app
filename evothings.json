@@ -1,8 +1,8 @@
 {
-  "name": "classroom-tracker-app",
+  "name": "classroom-tracker-file",
   "version": "1.0.0",
-  "title": "Classroom Tracker App",
-  "description": "App that scans for iBeacons and gathers accelerometer data.",
+  "title": "Classroom Tracker App - To File",
+  "description": "App that scans for iBeacons and gathers accelerometer data, writing the output to a text file in the phone.",
   "tags": [
     {
       "label": "ibeacon",
@@ -36,12 +36,15 @@
     },
     {
       "name": "cordova-plugin-device"
+    },
+    {
+      "name": "cordova-plugin-file"
     }
   ],
   "index-file": "index.html",
-  "uuid": "f7615b37-e4ad-49b6-8571-44ac5b55cd85",
+  "uuid": "6fdec9cd-5f1f-40af-9410-af819988ad52",
   "icon": "app-icon.png",
   "doc-url": "http://evothings.com/2.2/doc/examples/ibeacon-scan.html",
-  "long-description": "App that scans for iBeacons and gathers accelerometer data.",
-  "cordova-id": "com.luispprieto.classroom-tracker"
+  "long-description": "App that scans for iBeacons and gathers accelerometer data, writing the output to a text file in the phone.",
+  "cordova-id": "com.luispprieto.classroom-tracker-file"
 }
